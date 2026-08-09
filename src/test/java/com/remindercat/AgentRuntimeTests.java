@@ -1,0 +1,109 @@
+package com.remindercat;
+
+import com.remindercat.agent.AgentResult;
+import com.remindercat.agent.AgentRuntime;
+import com.remindercat.agent.AgentState;
+import com.remindercat.agent.Intent;
+import com.remindercat.agent.tool.TaskTool;
+import com.remindercat.dto.TaskResponse;
+import com.remindercat.service.TaskService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class AgentRuntimeTests {
+
+    private AgentRuntime agentRuntime;
+
+    @BeforeEach
+    void setUp() {
+        TaskService taskService = new TaskService();
+        TaskTool taskTool = new TaskTool(taskService);
+        agentRuntime = new AgentRuntime(List.of(taskTool));
+    }
+
+    @Test
+    void shouldRecognizeCreateIntentAndExecuteTaskTool() {
+        AgentState state = AgentState.builder()
+                .userId("agent-create-user")
+                .input("明天下午3点提醒我开会")
+                .remindTime(LocalDateTime.of(2030, 1, 2, 15, 0))
+                .build();
+
+        AgentResult<?> result = agentRuntime.execute(state);
+
+        assertTrue(result.isSuccess());
+        assertEquals(Intent.CREATE_TASK, state.getIntent());
+        assertEquals(Intent.CREATE_TASK, result.getIntent());
+        assertInstanceOf(TaskResponse.class, result.getData());
+        TaskResponse task = (TaskResponse) result.getData();
+        assertEquals("agent-create-user", task.getUserId());
+        assertEquals("明天下午3点提醒我开会", task.getContent());
+        assertEquals("PENDING", task.getStatus().name());
+    }
+
+    @Test
+    void shouldRecognizeCreateKeyword() {
+        AgentState state = AgentState.builder()
+                .userId("agent-keyword-user")
+                .input("创建一个喝水任务")
+                .remindTime(LocalDateTime.of(2030, 1, 2, 16, 0))
+                .build();
+
+        AgentResult<?> result = agentRuntime.execute(state);
+
+        assertTrue(result.isSuccess());
+        assertEquals(Intent.CREATE_TASK, result.getIntent());
+    }
+
+    @Test
+    void shouldRecognizeQueryIntentAndExecuteTaskTool() {
+        AgentState state = AgentState.builder()
+                .userId("agent-query-user")
+                .input("查询我的任务")
+                .build();
+
+        AgentResult<?> result = agentRuntime.execute(state);
+
+        assertTrue(result.isSuccess());
+        assertEquals(Intent.QUERY_TASK, state.getIntent());
+        assertInstanceOf(List.class, result.getData());
+        assertTrue(((List<?>) result.getData()).isEmpty());
+    }
+
+    @Test
+    void shouldReturnFailureForUnknownIntent() {
+        AgentState state = AgentState.builder()
+                .userId("agent-unknown-user")
+                .input("你好")
+                .build();
+
+        AgentResult<?> result = agentRuntime.execute(state);
+
+        assertFalse(result.isSuccess());
+        assertEquals(Intent.UNKNOWN, result.getIntent());
+        assertEquals("无法识别用户意图", result.getMessage());
+    }
+
+    @Test
+    void shouldReturnFailureWhenNoToolSupportsIntent() {
+        AgentRuntime runtimeWithoutTools = new AgentRuntime(List.of());
+        AgentState state = AgentState.builder()
+                .userId("agent-no-tool-user")
+                .input("查询我的任务")
+                .build();
+
+        AgentResult<?> result = runtimeWithoutTools.execute(state);
+
+        assertFalse(result.isSuccess());
+        assertEquals(Intent.QUERY_TASK, result.getIntent());
+        assertEquals("未找到可执行工具", result.getMessage());
+    }
+}
