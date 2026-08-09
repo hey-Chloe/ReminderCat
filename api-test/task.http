@@ -1,0 +1,10 @@
+### 创建提醒测试
+# 预期响应：{"userId":"001","reply":"收到，我会提醒你"}
+
+POST http://localhost:8080/api/message
+Content-Type: application/json
+
+{
+  "userId": "001",
+  "message": "明天下午3点提醒我开会"
+}

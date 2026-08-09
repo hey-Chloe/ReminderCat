@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: remindercat
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
