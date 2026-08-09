@@ -1,5 +1,6 @@
 package com.remindercat.controller;
 
+import com.remindercat.common.response.Result;
 import com.remindercat.dto.MessageRequest;
 import com.remindercat.dto.MessageResponse;
 import com.remindercat.service.AgentService;
@@ -18,12 +19,14 @@ public class MessageController {
     private final AgentService agentService;
 
     @PostMapping("/message")
-    public MessageResponse message(@Valid @RequestBody MessageRequest request) {
+    public Result<MessageResponse> message(@Valid @RequestBody MessageRequest request) {
         String reply = agentService.processMessage(request.getMessage());
 
-        return new MessageResponse(
+        MessageResponse response = new MessageResponse(
                 request.getUserId(),
                 reply
         );
+
+        return Result.success(response);
     }
 }

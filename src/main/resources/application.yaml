@@ -1,6 +1,9 @@
+server:
+  port: 8080
+
 spring:
   application:
-    name: remindercat
+    name: ReminderCat
 
   autoconfigure:
     exclude:
