@@ -1,15 +1,19 @@
 package com.remindercat.agent;
 
+import com.remindercat.agent.parser.IntentParser;
 import com.remindercat.agent.registry.ToolRegistry;
+import com.remindercat.agent.schema.TaskIntent;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AgentRuntime {
 
     private final ToolRegistry toolRegistry;
+    private final IntentParser intentParser;
 
-    public AgentRuntime(ToolRegistry toolRegistry) {
+    public AgentRuntime(ToolRegistry toolRegistry, IntentParser intentParser) {
         this.toolRegistry = toolRegistry;
+        this.intentParser = intentParser;
     }
 
     public AgentResult<?> execute(AgentState state) {
@@ -17,8 +21,17 @@ public class AgentRuntime {
             return AgentResult.failure(Intent.UNKNOWN, "Agent状态不能为空");
         }
 
-        Intent intent = recognizeIntent(state.getInput());
+        TaskIntent taskIntent = intentParser.parse(state.getInput());
+        Intent intent = taskIntent == null || taskIntent.getIntent() == null
+                ? Intent.UNKNOWN
+                : taskIntent.getIntent();
         state.setIntent(intent);
+        if (taskIntent != null && taskIntent.getContent() != null) {
+            state.setContent(taskIntent.getContent());
+        }
+        if (taskIntent != null && taskIntent.getRemindTime() != null) {
+            state.setRemindTime(taskIntent.getRemindTime());
+        }
 
         if (intent == Intent.UNKNOWN) {
             return AgentResult.failure(Intent.UNKNOWN, "无法识别用户意图");
@@ -29,19 +42,4 @@ public class AgentRuntime {
                 .orElseGet(() -> AgentResult.failure(intent, "未找到可执行工具"));
     }
 
-    private Intent recognizeIntent(String input) {
-        if (input == null || input.isBlank()) {
-            return Intent.UNKNOWN;
-        }
-
-        if (input.contains("提醒") || input.contains("创建")) {
-            return Intent.CREATE_TASK;
-        }
-
-        if (input.contains("查询")) {
-            return Intent.QUERY_TASK;
-        }
-
-        return Intent.UNKNOWN;
-    }
 }

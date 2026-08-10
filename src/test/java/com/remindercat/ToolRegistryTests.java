@@ -4,6 +4,7 @@ import com.remindercat.agent.AgentResult;
 import com.remindercat.agent.AgentRuntime;
 import com.remindercat.agent.AgentState;
 import com.remindercat.agent.Intent;
+import com.remindercat.agent.parser.RuleBasedIntentParser;
 import com.remindercat.agent.registry.ToolRegistry;
 import com.remindercat.agent.tool.AgentTool;
 import com.remindercat.agent.tool.TaskTool;
@@ -27,7 +28,7 @@ class ToolRegistryTests {
         TaskTool taskTool = new TaskTool(new TaskService());
         ToolRegistry toolRegistry = new ToolRegistry(List.of());
         toolRegistry.register(Intent.CREATE_TASK, taskTool);
-        AgentRuntime agentRuntime = new AgentRuntime(toolRegistry);
+        AgentRuntime agentRuntime = new AgentRuntime(toolRegistry, new RuleBasedIntentParser());
         AgentState state = AgentState.builder()
                 .userId("registry-create-user")
                 .input("创建一个开会提醒")
@@ -47,7 +48,7 @@ class ToolRegistryTests {
     void unknownIntentShouldNotResolveToolAndShouldReturnFailure() {
         TaskTool taskTool = new TaskTool(new TaskService());
         ToolRegistry toolRegistry = new ToolRegistry(List.of(taskTool));
-        AgentRuntime agentRuntime = new AgentRuntime(toolRegistry);
+        AgentRuntime agentRuntime = new AgentRuntime(toolRegistry, new RuleBasedIntentParser());
         AgentState state = AgentState.builder()
                 .userId("registry-unknown-user")
                 .input("你好")

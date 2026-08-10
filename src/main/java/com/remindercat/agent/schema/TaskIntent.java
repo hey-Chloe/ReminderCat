@@ -1,5 +1,6 @@
-package com.remindercat.agent;
+package com.remindercat.agent.schema;
 
+import com.remindercat.agent.Intent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,15 +12,11 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AgentState {
+public class TaskIntent {
 
-    private String userId;
-
-    private String input;
+    private Intent intent;
 
     private String content;
 
     private LocalDateTime remindTime;
-
-    private Intent intent;
 }

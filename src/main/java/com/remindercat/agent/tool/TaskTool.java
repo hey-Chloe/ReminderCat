@@ -45,7 +45,10 @@ public class TaskTool implements AgentTool {
 
         TaskCreateRequest request = new TaskCreateRequest();
         request.setUserId(state.getUserId());
-        request.setContent(state.getInput());
+        String content = state.getContent() == null || state.getContent().isBlank()
+                ? state.getInput()
+                : state.getContent();
+        request.setContent(content);
         request.setRemindTime(state.getRemindTime());
 
         Task task = taskService.createTask(request);

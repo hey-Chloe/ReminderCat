@@ -4,7 +4,10 @@ import com.remindercat.agent.AgentResult;
 import com.remindercat.agent.AgentRuntime;
 import com.remindercat.agent.AgentState;
 import com.remindercat.agent.Intent;
+import com.remindercat.agent.parser.IntentParser;
+import com.remindercat.agent.parser.RuleBasedIntentParser;
 import com.remindercat.agent.registry.ToolRegistry;
+import com.remindercat.agent.schema.TaskIntent;
 import com.remindercat.agent.tool.TaskTool;
 import com.remindercat.dto.TaskResponse;
 import com.remindercat.service.TaskService;
@@ -28,7 +31,7 @@ class AgentRuntimeTests {
         TaskService taskService = new TaskService();
         TaskTool taskTool = new TaskTool(taskService);
         ToolRegistry toolRegistry = new ToolRegistry(List.of(taskTool));
-        agentRuntime = new AgentRuntime(toolRegistry);
+        agentRuntime = new AgentRuntime(toolRegistry, new RuleBasedIntentParser());
     }
 
     @Test
@@ -96,7 +99,10 @@ class AgentRuntimeTests {
 
     @Test
     void shouldReturnFailureWhenNoToolSupportsIntent() {
-        AgentRuntime runtimeWithoutTools = new AgentRuntime(new ToolRegistry(List.of()));
+        AgentRuntime runtimeWithoutTools = new AgentRuntime(
+                new ToolRegistry(List.of()),
+                new RuleBasedIntentParser()
+        );
         AgentState state = AgentState.builder()
                 .userId("agent-no-tool-user")
                 .input("查询我的任务")
@@ -107,5 +113,27 @@ class AgentRuntimeTests {
         assertFalse(result.isSuccess());
         assertEquals(Intent.QUERY_TASK, result.getIntent());
         assertEquals("未找到可执行工具", result.getMessage());
+    }
+
+    @Test
+    void shouldAllowIntentParserToBeReplaced() {
+        IntentParser fixedParser = input -> TaskIntent.builder()
+                .intent(Intent.QUERY_TASK)
+                .content(input)
+                .build();
+        TaskTool taskTool = new TaskTool(new TaskService());
+        AgentRuntime runtime = new AgentRuntime(
+                new ToolRegistry(List.of(taskTool)),
+                fixedParser
+        );
+        AgentState state = AgentState.builder()
+                .userId("replaceable-parser-user")
+                .input("任意输入")
+                .build();
+
+        AgentResult<?> result = runtime.execute(state);
+
+        assertTrue(result.isSuccess());
+        assertEquals(Intent.QUERY_TASK, result.getIntent());
     }
 }
