@@ -4,6 +4,7 @@ import com.remindercat.agent.AgentResult;
 import com.remindercat.agent.AgentRuntime;
 import com.remindercat.agent.AgentState;
 import com.remindercat.agent.Intent;
+import com.remindercat.agent.registry.ToolRegistry;
 import com.remindercat.agent.tool.TaskTool;
 import com.remindercat.dto.TaskResponse;
 import com.remindercat.service.TaskService;
@@ -26,7 +27,8 @@ class AgentRuntimeTests {
     void setUp() {
         TaskService taskService = new TaskService();
         TaskTool taskTool = new TaskTool(taskService);
-        agentRuntime = new AgentRuntime(List.of(taskTool));
+        ToolRegistry toolRegistry = new ToolRegistry(List.of(taskTool));
+        agentRuntime = new AgentRuntime(toolRegistry);
     }
 
     @Test
@@ -94,7 +96,7 @@ class AgentRuntimeTests {
 
     @Test
     void shouldReturnFailureWhenNoToolSupportsIntent() {
-        AgentRuntime runtimeWithoutTools = new AgentRuntime(List.of());
+        AgentRuntime runtimeWithoutTools = new AgentRuntime(new ToolRegistry(List.of()));
         AgentState state = AgentState.builder()
                 .userId("agent-no-tool-user")
                 .input("查询我的任务")

@@ -1,17 +1,15 @@
 package com.remindercat.agent;
 
-import com.remindercat.agent.tool.AgentTool;
+import com.remindercat.agent.registry.ToolRegistry;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 @Component
 public class AgentRuntime {
 
-    private final List<AgentTool> tools;
+    private final ToolRegistry toolRegistry;
 
-    public AgentRuntime(List<AgentTool> tools) {
-        this.tools = List.copyOf(tools);
+    public AgentRuntime(ToolRegistry toolRegistry) {
+        this.toolRegistry = toolRegistry;
     }
 
     public AgentResult<?> execute(AgentState state) {
@@ -26,9 +24,7 @@ public class AgentRuntime {
             return AgentResult.failure(Intent.UNKNOWN, "无法识别用户意图");
         }
 
-        return tools.stream()
-                .filter(tool -> tool.supports(intent))
-                .findFirst()
+        return toolRegistry.getTool(intent)
                 .map(tool -> tool.execute(state))
                 .orElseGet(() -> AgentResult.failure(intent, "未找到可执行工具"));
     }
