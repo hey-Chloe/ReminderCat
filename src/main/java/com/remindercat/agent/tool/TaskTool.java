@@ -3,6 +3,7 @@ package com.remindercat.agent.tool;
 import com.remindercat.agent.AgentResult;
 import com.remindercat.agent.AgentState;
 import com.remindercat.agent.Intent;
+import com.remindercat.agent.schema.TaskIntent;
 import com.remindercat.dto.TaskCreateRequest;
 import com.remindercat.dto.TaskResponse;
 import com.remindercat.entity.Task;
@@ -28,28 +29,36 @@ public class TaskTool implements AgentTool {
     @Override
     public AgentResult<?> execute(AgentState state) {
         return switch (state.getIntent()) {
-            case CREATE_TASK -> createTask(state);
+            case CREATE_TASK -> createTask(
+                    state.getUserId(),
+                    TaskIntent.builder()
+                            .intent(state.getIntent())
+                            .content(state.getContent() == null ? state.getInput() : state.getContent())
+                            .remindTime(state.getRemindTime())
+                            .build()
+            );
             case QUERY_TASK -> queryTasks(state);
             case UNKNOWN -> AgentResult.failure(Intent.UNKNOWN, "无法识别用户意图");
         };
     }
 
-    private AgentResult<TaskResponse> createTask(AgentState state) {
-        if (state.getUserId() == null || state.getUserId().isBlank()) {
+    public AgentResult<TaskResponse> createTask(String userId, TaskIntent taskIntent) {
+        if (userId == null || userId.isBlank()) {
             return AgentResult.failure(Intent.CREATE_TASK, "userId不能为空");
         }
 
-        if (state.getRemindTime() == null) {
+        if (taskIntent == null || taskIntent.getRemindTime() == null) {
             return AgentResult.failure(Intent.CREATE_TASK, "remindTime不能为空");
         }
 
+        if (taskIntent.getContent() == null || taskIntent.getContent().isBlank()) {
+            return AgentResult.failure(Intent.CREATE_TASK, "content不能为空");
+        }
+
         TaskCreateRequest request = new TaskCreateRequest();
-        request.setUserId(state.getUserId());
-        String content = state.getContent() == null || state.getContent().isBlank()
-                ? state.getInput()
-                : state.getContent();
-        request.setContent(content);
-        request.setRemindTime(state.getRemindTime());
+        request.setUserId(userId);
+        request.setContent(taskIntent.getContent());
+        request.setRemindTime(taskIntent.getRemindTime());
 
         Task task = taskService.createTask(request);
         return AgentResult.success(Intent.CREATE_TASK, "任务创建成功", TaskResponse.from(task));

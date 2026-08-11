@@ -5,11 +5,23 @@ spring:
   application:
     name: ReminderCat
 
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/remindercat}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
 
 deepseek:
   api-key: ${DEEPSEEK_API_KEY:}
-  base-url: https://api.deepseek.com
-  model: deepseek-chat
+  base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+  model: ${DEEPSEEK_MODEL:deepseek-chat}
+
+wechat:
+  corp-id: ${WECHAT_CORP_ID:}
+  secret: ${WECHAT_SECRET:}
+  agent-id: ${WECHAT_AGENT_ID:0}

@@ -4,11 +4,15 @@ import com.remindercat.agent.Intent;
 import com.remindercat.agent.llm.LLMClient;
 import com.remindercat.agent.schema.TaskIntent;
 import com.remindercat.common.exception.BusinessException;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 
+@Primary
+@Component
 public class LLMIntentParser implements IntentParser {
 
     private final LLMClient llmClient;
@@ -48,8 +52,9 @@ public class LLMIntentParser implements IntentParser {
                 intent: CREATE_TASK、QUERY_TASK或UNKNOWN
                 content: 提醒内容
                 remindTime: ISO-8601格式时间
+                当前时间：%s
                 用户输入：%s
-                """.formatted(input);
+                """.formatted(LocalDateTime.now(), input);
     }
 
     private String requiredText(JsonNode root, String fieldName) {

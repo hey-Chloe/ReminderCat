@@ -10,6 +10,8 @@ import com.remindercat.agent.registry.ToolRegistry;
 import com.remindercat.agent.schema.TaskIntent;
 import com.remindercat.agent.tool.TaskTool;
 import com.remindercat.dto.TaskResponse;
+import com.remindercat.entity.Task;
+import com.remindercat.entity.TaskStatus;
 import com.remindercat.service.TaskService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AgentRuntimeTests {
 
@@ -28,7 +33,7 @@ class AgentRuntimeTests {
 
     @BeforeEach
     void setUp() {
-        TaskService taskService = new TaskService();
+        TaskService taskService = taskServiceStub();
         TaskTool taskTool = new TaskTool(taskService);
         ToolRegistry toolRegistry = new ToolRegistry(List.of(taskTool));
         agentRuntime = new AgentRuntime(toolRegistry, new RuleBasedIntentParser());
@@ -121,7 +126,7 @@ class AgentRuntimeTests {
                 .intent(Intent.QUERY_TASK)
                 .content(input)
                 .build();
-        TaskTool taskTool = new TaskTool(new TaskService());
+        TaskTool taskTool = new TaskTool(taskServiceStub());
         AgentRuntime runtime = new AgentRuntime(
                 new ToolRegistry(List.of(taskTool)),
                 fixedParser
@@ -135,5 +140,22 @@ class AgentRuntimeTests {
 
         assertTrue(result.isSuccess());
         assertEquals(Intent.QUERY_TASK, result.getIntent());
+    }
+
+    private TaskService taskServiceStub() {
+        TaskService taskService = mock(TaskService.class);
+        when(taskService.createTask(any())).thenAnswer(invocation -> {
+            com.remindercat.dto.TaskCreateRequest request = invocation.getArgument(0);
+            return Task.builder()
+                    .id(1L)
+                    .userId(request.getUserId())
+                    .content(request.getContent())
+                    .remindTime(request.getRemindTime())
+                    .status(TaskStatus.PENDING)
+                    .createdTime(LocalDateTime.now())
+                    .build();
+        });
+        when(taskService.getTasksByUserId(any())).thenReturn(List.of());
+        return taskService;
     }
 }

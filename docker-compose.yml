@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: remindercat-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/remindercat
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      WECHAT_CORP_ID: ${WECHAT_CORP_ID:-}
+      WECHAT_SECRET: ${WECHAT_SECRET:-}
+      WECHAT_AGENT_ID: ${WECHAT_AGENT_ID:-0}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: remindercat-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: remindercat
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    ports:
+      - "5432:5432"
+    volumes:
+      - remindercat_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d remindercat"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  remindercat_postgres_data:

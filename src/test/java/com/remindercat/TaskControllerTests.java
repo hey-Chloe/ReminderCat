@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -56,12 +57,13 @@ class TaskControllerTests {
 
     @Test
     void getTasksByUserIdShouldSucceed() throws Exception {
-        taskService.createTask(createRequest("task-query-user", "查询测试"));
+        String userId = "task-query-user-" + UUID.randomUUID();
+        taskService.createTask(createRequest(userId, "查询测试"));
 
-        mockMvc.perform(get("/api/tasks/task-query-user"))
+        mockMvc.perform(get("/api/tasks/{userId}", userId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data[0].userId").value("task-query-user"))
+                .andExpect(jsonPath("$.data[0].userId").value(userId))
                 .andExpect(jsonPath("$.data[0].content").value("查询测试"))
                 .andExpect(jsonPath("$.data[0].status").value("PENDING"));
     }

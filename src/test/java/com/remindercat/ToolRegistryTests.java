@@ -9,6 +9,9 @@ import com.remindercat.agent.registry.ToolRegistry;
 import com.remindercat.agent.tool.AgentTool;
 import com.remindercat.agent.tool.TaskTool;
 import com.remindercat.dto.TaskResponse;
+import com.remindercat.dto.TaskCreateRequest;
+import com.remindercat.entity.Task;
+import com.remindercat.entity.TaskStatus;
 import com.remindercat.service.TaskService;
 import org.junit.jupiter.api.Test;
 
@@ -20,12 +23,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ToolRegistryTests {
 
     @Test
     void createTaskShouldFindAndExecuteRegisteredTaskTool() {
-        TaskTool taskTool = new TaskTool(new TaskService());
+        TaskTool taskTool = new TaskTool(taskServiceStub());
         ToolRegistry toolRegistry = new ToolRegistry(List.of());
         toolRegistry.register(Intent.CREATE_TASK, taskTool);
         AgentRuntime agentRuntime = new AgentRuntime(toolRegistry, new RuleBasedIntentParser());
@@ -46,7 +52,7 @@ class ToolRegistryTests {
 
     @Test
     void unknownIntentShouldNotResolveToolAndShouldReturnFailure() {
-        TaskTool taskTool = new TaskTool(new TaskService());
+        TaskTool taskTool = new TaskTool(taskServiceStub());
         ToolRegistry toolRegistry = new ToolRegistry(List.of(taskTool));
         AgentRuntime agentRuntime = new AgentRuntime(toolRegistry, new RuleBasedIntentParser());
         AgentState state = AgentState.builder()
@@ -60,5 +66,21 @@ class ToolRegistryTests {
         assertFalse(result.isSuccess());
         assertEquals(Intent.UNKNOWN, result.getIntent());
         assertEquals("无法识别用户意图", result.getMessage());
+    }
+
+    private TaskService taskServiceStub() {
+        TaskService taskService = mock(TaskService.class);
+        when(taskService.createTask(any(TaskCreateRequest.class))).thenAnswer(invocation -> {
+            TaskCreateRequest request = invocation.getArgument(0);
+            return Task.builder()
+                    .id(1L)
+                    .userId(request.getUserId())
+                    .content(request.getContent())
+                    .remindTime(request.getRemindTime())
+                    .status(TaskStatus.PENDING)
+                    .createdTime(LocalDateTime.now())
+                    .build();
+        });
+        return taskService;
     }
 }
