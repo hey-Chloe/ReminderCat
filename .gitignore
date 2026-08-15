@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local environment secrets & large build artifacts ###
+.env
+ReminderCat.tar.gz

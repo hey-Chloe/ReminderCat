@@ -4,8 +4,28 @@ CREATE TABLE IF NOT EXISTS tasks (
     content TEXT NOT NULL,
     remind_time TIMESTAMP NOT NULL,
     status VARCHAR(32) NOT NULL,
-    created_time TIMESTAMP NOT NULL
+    created_time TIMESTAMP NOT NULL,
+    retry_count INT NOT NULL DEFAULT 0,
+    next_retry_time TIMESTAMP NULL,
+    completed_time TIMESTAMP NULL,
+    updated_time TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks (user_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks (status, remind_time);
+
+-- 兼容已部署的旧表：重复执行安全
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS retry_count INT NOT NULL DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS next_retry_time TIMESTAMP NULL;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_time TIMESTAMP NULL;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS updated_time TIMESTAMP NOT NULL DEFAULT NOW();
+
+CREATE INDEX IF NOT EXISTS idx_tasks_processing_recovery ON tasks (status, updated_time);
+
+-- 企业微信消息去重表：以 msg_id 为主键保证幂等
+CREATE TABLE IF NOT EXISTS wechat_messages (
+    msg_id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(128) NOT NULL,
+    msg_type VARCHAR(32) NOT NULL,
+    received_time TIMESTAMP NOT NULL
+);

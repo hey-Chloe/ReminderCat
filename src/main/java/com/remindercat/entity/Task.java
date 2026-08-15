@@ -30,4 +30,16 @@ public class Task {
 
     /** 任务创建时间。 */
     private LocalDateTime createdTime;
+
+    /** 已尝试派发次数（claim 时递增）。 */
+    private Integer retryCount;
+
+    /** 下次重试时间，为空表示按 remind_time 首次派发。 */
+    private LocalDateTime nextRetryTime;
+
+    /** 完成时间。 */
+    private LocalDateTime completedTime;
+
+    /** 最近一次状态更新时间。 */
+    private LocalDateTime updatedTime;
 }

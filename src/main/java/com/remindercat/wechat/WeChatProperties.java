@@ -16,4 +16,8 @@ public class WeChatProperties {
     private String secret;
 
     private Integer agentId;
+
+    private String token;
+
+    private String encodingAesKey;
 }

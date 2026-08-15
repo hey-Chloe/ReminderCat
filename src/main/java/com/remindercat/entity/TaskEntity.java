@@ -29,4 +29,12 @@ public class TaskEntity {
     private TaskStatus status;
 
     private LocalDateTime createdTime;
+
+    private Integer retryCount;
+
+    private LocalDateTime nextRetryTime;
+
+    private LocalDateTime completedTime;
+
+    private LocalDateTime updatedTime;
 }

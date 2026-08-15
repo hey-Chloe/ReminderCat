@@ -25,3 +25,5 @@ wechat:
   corp-id: ${WECHAT_CORP_ID:}
   secret: ${WECHAT_SECRET:}
   agent-id: ${WECHAT_AGENT_ID:0}
+  token: ${WECHAT_TOKEN:}
+  encoding-aes-key: ${WECHAT_ENCODING_AES_KEY:}

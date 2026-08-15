@@ -20,7 +20,7 @@ public class TaskRepository {
     public Task createTask(Task task) {
         TaskEntity entity = toEntity(task);
         taskMapper.insert(entity);
-        return toDomain(entity);
+        return findById(entity.getId());
     }
 
     public List<Task> getTasksByUser(String userId) {
@@ -47,6 +47,14 @@ public class TaskRepository {
         return updateTaskStatus(taskId, TaskStatus.FAILED);
     }
 
+    public void scheduleRetry(Long taskId, LocalDateTime nextRetryTime) {
+        taskMapper.scheduleRetry(taskId, nextRetryTime);
+    }
+
+    public int recoverStaleProcessing(LocalDateTime cutoffTime) {
+        return taskMapper.recoverStaleProcessing(cutoffTime);
+    }
+
     public Task findById(Long taskId) {
         TaskEntity entity = taskMapper.selectById(taskId);
         return entity == null ? null : toDomain(entity);
@@ -67,6 +75,10 @@ public class TaskRepository {
                 .remindTime(task.getRemindTime())
                 .status(task.getStatus())
                 .createdTime(task.getCreatedTime())
+                .retryCount(task.getRetryCount())
+                .nextRetryTime(task.getNextRetryTime())
+                .completedTime(task.getCompletedTime())
+                .updatedTime(task.getUpdatedTime())
                 .build();
     }
 
@@ -78,6 +90,10 @@ public class TaskRepository {
                 .remindTime(entity.getRemindTime())
                 .status(entity.getStatus())
                 .createdTime(entity.getCreatedTime())
+                .retryCount(entity.getRetryCount())
+                .nextRetryTime(entity.getNextRetryTime())
+                .completedTime(entity.getCompletedTime())
+                .updatedTime(entity.getUpdatedTime())
                 .build();
     }
 }

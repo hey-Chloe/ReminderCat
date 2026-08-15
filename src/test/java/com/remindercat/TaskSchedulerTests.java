@@ -7,6 +7,7 @@ import com.remindercat.service.TaskService;
 import com.remindercat.wechat.WeChatClient;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,7 +21,7 @@ import static org.mockito.Mockito.when;
 class TaskSchedulerTests {
 
     @Test
-    void shouldClaimSendAndCompleteDueTask() {
+    void shouldRecoverStaleProcessingThenClaimSendAndComplete() {
         TaskService taskService = mock(TaskService.class);
         WeChatClient weChatClient = mock(WeChatClient.class);
         TaskScheduler scheduler = new TaskScheduler(taskService, weChatClient);
@@ -30,13 +31,14 @@ class TaskSchedulerTests {
 
         scheduler.scanDueTasks();
 
-        verify(weChatClient).sendReminder("due-user", "到期开会提醒");
+        verify(taskService).recoverStaleProcessing(any(Duration.class));
+        verify(weChatClient).sendReminder("due-user", "🔔 提醒喵：到期开会提醒");
         verify(taskService).completeTask(1L);
-        verify(taskService, never()).failTask(1L);
+        verify(taskService, never()).markDeliveryFailed(1L);
     }
 
     @Test
-    void shouldMarkClaimedTaskFailedWhenSendingFails() {
+    void shouldScheduleRetryWhenSendingFails() {
         TaskService taskService = mock(TaskService.class);
         WeChatClient weChatClient = mock(WeChatClient.class);
         TaskScheduler scheduler = new TaskScheduler(taskService, weChatClient);
@@ -44,11 +46,11 @@ class TaskSchedulerTests {
         when(taskService.getPendingTasksDue(any(LocalDateTime.class))).thenReturn(List.of(dueTask));
         when(taskService.claimTask(2L)).thenReturn(true);
         doThrow(new RuntimeException("send failed"))
-                .when(weChatClient).sendReminder("failed-user", "失败提醒");
+                .when(weChatClient).sendReminder("failed-user", "🔔 提醒喵：失败提醒");
 
         scheduler.scanDueTasks();
 
-        verify(taskService).failTask(2L);
+        verify(taskService).markDeliveryFailed(2L);
         verify(taskService, never()).completeTask(2L);
     }
 
@@ -65,7 +67,7 @@ class TaskSchedulerTests {
 
         verify(weChatClient, never()).sendReminder(any(), any());
         verify(taskService, never()).completeTask(3L);
-        verify(taskService, never()).failTask(3L);
+        verify(taskService, never()).markDeliveryFailed(3L);
     }
 
     private Task task(Long id, String userId, String content) {
@@ -75,7 +77,9 @@ class TaskSchedulerTests {
                 .content(content)
                 .remindTime(LocalDateTime.now().minusMinutes(1))
                 .status(TaskStatus.PENDING)
+                .retryCount(0)
                 .createdTime(LocalDateTime.now().minusHours(1))
+                .updatedTime(LocalDateTime.now().minusHours(1))
                 .build();
     }
 }
